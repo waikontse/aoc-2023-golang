@@ -3,7 +3,6 @@ package day1
 import (
 	"aoc-2023-golang/src/utils"
 	"cmp"
-	"fmt"
 	"log"
 	"slices"
 	"sort"
@@ -12,8 +11,8 @@ import (
 	"unicode"
 )
 
-func solvePart1() {
-	var lines = utils.ParseFile("day_1.txt")
+func solvePart1(filenameWithPath string) int {
+	var lines = utils.ParseFile(filenameWithPath)
 
 	newLines := extractNumbersFromLines(lines)
 
@@ -22,13 +21,11 @@ func solvePart1() {
 		newInts = append(newInts, convertToIntStr(newLine))
 	}
 
-	sum := utils.SumStrings(newInts)
-
-	fmt.Println("sum: ", sum)
+	return utils.SumStrings(newInts)
 }
 
-func solvePart2() {
-	var lines = utils.ParseFile("day_1.txt")
+func solvePart2(filenameWithPath string) int {
+	var lines = utils.ParseFile(filenameWithPath)
 	newLines := extractNumbersFromLines(lines)
 
 	var newCorrectedInts []string
@@ -41,9 +38,7 @@ func solvePart2() {
 		newCorrectedInts2 = append(newCorrectedInts2, convertToIntStr(newLine))
 	}
 
-	sum := utils.SumStrings(newCorrectedInts2)
-
-	fmt.Println("sum: ", sum)
+	return utils.SumStrings(newCorrectedInts2)
 }
 
 func extractNumbersFromLines(lines []string) []string {

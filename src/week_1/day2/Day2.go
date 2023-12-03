@@ -18,8 +18,8 @@ type Game struct {
 	plays  []Play
 }
 
-func SolvePart1() {
-	var rawLines = utils.ParseFile("day_2.txt")
+func SolvePart1(filenameWithPath string) int {
+	var rawLines = utils.ParseFile(filenameWithPath)
 	var parsedGames = parseIntoGames(rawLines)
 
 	// Check which games can be played
@@ -31,12 +31,11 @@ func SolvePart1() {
 		}
 	}
 
-	sumOfIds := utils.SumInts(playableGames)
-	fmt.Println("Sum of ids: ", sumOfIds)
+	return utils.SumInts(playableGames)
 }
 
-func SolvePart2() {
-	var rawLines = utils.ParseFile("day_2.txt")
+func SolvePart2(filenameWithPath string) int {
+	var rawLines = utils.ParseFile(filenameWithPath)
 	var parsedGames = parseIntoGames(rawLines)
 
 	// Find the largest plays
@@ -50,8 +49,7 @@ func SolvePart2() {
 		powersOfPlays = append(powersOfPlays, calcPowerOfPlay(play))
 	}
 
-	sumOfIds := utils.SumInts(powersOfPlays)
-	fmt.Println("Sum of ids: ", sumOfIds)
+	return utils.SumInts(powersOfPlays)
 }
 
 func calcPowerOfPlay(play Play) int {
@@ -92,7 +90,6 @@ func parseIntoPlays(rawPlays []string) []Play {
 }
 
 func parseIntoPlay(rawPlay string) Play {
-	fmt.Println("Parsing play: ", rawPlay)
 	splitCubes := strings.Split(rawPlay, ",")
 
 	var parsedPlay Play
@@ -146,6 +143,5 @@ func findLargestPlays(game Game) Play {
 		}
 	}
 
-	fmt.Println("return largest play: ", largestPlay)
 	return largestPlay
 }

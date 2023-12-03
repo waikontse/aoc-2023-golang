@@ -13,8 +13,8 @@ func failOnError(err error) {
 	}
 }
 
-func ParseFile(filename string) []string {
-	file, err := os.Open("./resources/" + filename)
+func ParseFile(filenameWithPath string) []string {
+	file, err := os.Open(filenameWithPath)
 	failOnError(err)
 
 	defer file.Close()
@@ -28,7 +28,11 @@ func ParseFile(filename string) []string {
 	return lines
 }
 
-func SumInt(values []int) int {
+func ParseFileForDay(day int) {
+
+}
+
+func SumInts(values []int) int {
 	return ReduceFunc(values, func(i, j int) int {
 		return i + j
 	}, 0)
@@ -40,7 +44,7 @@ func SumStrings(values []string) int {
 		return value
 	})
 
-	return SumInt(mappedValues)
+	return SumInts(mappedValues)
 }
 
 func MapFunc1[T comparable, R comparable](values []T, transform func(T) R) []R {
