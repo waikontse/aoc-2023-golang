@@ -1,0 +1,3 @@
+# Ignore Intellij generated files
+.idea/**
+.idea/**.xml
