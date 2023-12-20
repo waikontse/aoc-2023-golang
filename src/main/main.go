@@ -1,18 +1,16 @@
 package main
 
 import (
-	"aoc-2023-golang/src/week_1/day4"
+	"aoc-2023-golang/src/week_2/day9"
 	"fmt"
 	"time"
 )
 
 func main() {
-	//day3.SolvePart1()
-	//day3.SolvePart2()
-
 	startTime := time.Now()
 
-	fmt.Println(day4.SolvePart2())
+	// fmt.Println(day8.SolvePart1("./resources/day_8.txt"))
+	fmt.Println(day9.SolvePart1("./resources/day_9_example.txt"))
 
 	elapsed := time.Since(startTime)
 
