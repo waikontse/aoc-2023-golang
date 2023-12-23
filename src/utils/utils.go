@@ -104,11 +104,6 @@ func ReduceFunc[T any](values []T, reducer func(T, T) T, startValue T) T {
 	return currentReducedValue
 }
 
-type Pair[T any, R any] struct {
-	First  T
-	Second R
-}
-
 func AbsInt(x int) int {
 	return AbsDiffInt(x, 0)
 }
