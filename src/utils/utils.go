@@ -211,14 +211,36 @@ func LCM(a, b int64, integers ...int64) int64 {
 	return result
 }
 
-func Filter[T any](values []T, pred func(value T) bool) []*T {
-	filteredValues := make([]*T, 0)
+func Filter[T any](values []T, pred func(value T) bool) []T {
+	filteredValues := make([]T, 0)
 
 	for i := range values {
 		if pred(values[i]) {
-			filteredValues = append(filteredValues, &values[i])
+			filteredValues = append(filteredValues, values[i])
 		}
 	}
 
 	return filteredValues
+}
+
+func Count[T any](values []T, predicate func(value T) bool) int {
+	var count int = 0
+	for i := range values {
+		if predicate(values[i]) {
+			count += 1
+		}
+	}
+
+	return count
+}
+
+func ZipWith[T any, R any](lValues []T, rValues []R) []Pair[T, R] {
+	pairs := make([]Pair[T, R], 0)
+
+	for i := range lValues {
+		newPair := Pair[T, R]{First: lValues[i], Second: rValues[i]}
+		pairs = append(pairs, newPair)
+	}
+
+	return pairs
 }

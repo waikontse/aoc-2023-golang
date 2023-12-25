@@ -20,23 +20,23 @@ func CreateBoard[T comparable](width, height int) Board[T] {
 }
 
 func Print[T comparable](board *Board[T]) {
-	for y := 0; y < board.Width; y++ {
-		for x := 0; x < board.Height; x++ {
+	for y := 0; y < board.Height; y++ {
+		for x := 0; x < board.Width; x++ {
 			fmt.Print(board.Board[x][y])
 		}
 		fmt.Println()
 	}
 }
 
-func Get[T comparable](board *Board[T], x, y int) T {
+func (board *Board[T]) Get(x, y int) T {
 	return board.Board[x][y]
 }
 
-func Set[T comparable](board *Board[T], x, y int, value T) {
+func (board *Board[T]) Set(x, y int, value T) {
 	board.Board[x][y] = value
 }
 
-func GetRow[T comparable](board *Board[T], height int) []T {
+func (board *Board[T]) GetRow(height int) []T {
 	row := make([]T, board.Width)
 	for i := range board.Board {
 		row[i] = board.Board[i][height]
@@ -45,7 +45,7 @@ func GetRow[T comparable](board *Board[T], height int) []T {
 	return row
 }
 
-func GetColumn[T comparable](board *Board[T], width int) []T {
+func (board *Board[T]) GetColumn(width int) []T {
 	return board.Board[width]
 }
 
@@ -53,46 +53,46 @@ func CanMoveTop(p Position) bool {
 	return p.Second > 0
 }
 
-func GetTopChar(board *Board[string], p Position) string {
+func (board *Board[T]) GetTopChar(p Position) T {
 	if CanMoveTop(p) {
-		return Get(board, p.First, p.Second-1)
+		return board.Get(p.First, p.Second-1)
 	}
 
-	return ""
+	return *new(T)
 }
 
-func CanMoveBottom(board *Board[string], p Position) bool {
+func (board *Board[T]) CanMoveBottom(p Position) bool {
 	return p.Second < (board.Height - 1)
 }
 
-func GetBottomChar(b *Board[string], p Position) string {
-	if CanMoveBottom(b, p) {
-		return Get(b, p.First, p.Second+1)
+func (board *Board[T]) GetBottomChar(p Position) T {
+	if board.CanMoveBottom(p) {
+		return board.Get(p.First, p.Second+1)
 	}
 
-	return ""
+	return *new(T)
 }
 
 func CanMoveLeft(p Position) bool {
 	return p.First > 0
 }
 
-func GetLeftChar(b *Board[string], p Position) string {
+func (board *Board[T]) GetLeftChar(p Position) T {
 	if CanMoveLeft(p) {
-		return Get(b, p.First-1, p.Second)
+		return board.Get(p.First-1, p.Second)
 	}
 
-	return ""
+	return *new(T)
 }
 
-func CanMoveRight(board *Board[string], p Position) bool {
+func (board *Board[T]) CanMoveRight(p Position) bool {
 	return p.First < (board.Width - 1)
 }
 
-func GetRightChar(b *Board[string], p Position) string {
-	if CanMoveRight(b, p) {
-		return Get(b, p.First+1, p.Second)
+func (board *Board[T]) GetRightChar(p Position) T {
+	if board.CanMoveRight(p) {
+		return board.Get(p.First+1, p.Second)
 	}
 
-	return ""
+	return *new(T)
 }

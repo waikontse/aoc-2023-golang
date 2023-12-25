@@ -22,24 +22,106 @@ type TrackingInfo struct {
 	PreviousPos utils.Position
 	CurrentPos  utils.Position
 	stepsTaken  int
+	board       utils.Board[string]
 }
 
 func (trackingInfo *TrackingInfo) MoveToNewPosition(newPosition utils.Position) {
 	trackingInfo.PreviousPos, trackingInfo.CurrentPos = trackingInfo.CurrentPos, newPosition
 	trackingInfo.stepsTaken += 1
+
+	// Update the board
+	trackingInfo.board.Set(newPosition.First, newPosition.Second, "*")
 }
 
 func SolvePart1(filename string) int {
-	rawLines := utils.ParseFile(filename)
-	board := ParseRawLinesToBoard(rawLines)
-	startingPos := FindStartingPosition(&board)
+	board := getBoard(filename)
+	//startingPos := FindStartingPosition(&board)
 
-	utils.Print(&board)
-	fmt.Println(startingPos)
+	//utils.Print(&board)
+	//fmt.Println(startingPos)
 
-	trackingInfo := FindLargestLoop(&board)
+	trackingInfo := FindLargestLoop(&board, filename)
 
 	return trackingInfo.stepsTaken / 2
+}
+
+func SolvePart2(filename string) int {
+	board := getBoard(filename)
+	trackingInfo := FindLargestLoop(&board, filename)
+	cleanBoard(&trackingInfo.board, &board)
+	utils.Print(&trackingInfo.board)
+	foundDotLocations := FindAllTargetInBoard(&trackingInfo.board, ".")
+	foundDollarLocations := FindAllTargetInBoard(&trackingInfo.board, "$")
+	//utils.Print(&board)
+	//fmt.Println("Found targets: ", len(foundDotLocations))
+
+	// Find all the '.' in the board
+	// Determine if '.' is inside the main loop
+	dotPositionsWithinLoop := GetPositionsWithinLoop(foundDotLocations,
+		&trackingInfo.board)
+	dollarLocationsInsideLoop := GetPositionsWithinLoop(foundDollarLocations,
+		&trackingInfo.board)
+
+	fmt.Println("Found ground inside loop: ", len(dotPositionsWithinLoop))
+	fmt.Println("Found loose pipes inside loop: ", len(dollarLocationsInsideLoop))
+
+	//for _, p := range dollarLocationsInsideLoop {
+	//	trackingInfo.board.Set(p.First, p.Second, ".")
+	//}
+
+	mergedPositionsWithinLoop := append(dotPositionsWithinLoop, dollarLocationsInsideLoop...)
+
+	// Flood fill the map per position
+	for i := range mergedPositionsWithinLoop {
+		FloodFill(&trackingInfo.board, mergedPositionsWithinLoop[i])
+	}
+	utils.Print(&trackingInfo.board)
+
+	return len(FindAllTargetInBoard(&trackingInfo.board, "^"))
+}
+
+func GetPositionsWithinLoop(locations []utils.Position, b *utils.Board[string]) []utils.Position {
+	positionsInsideLoop := utils.MapFunc1(locations, func(p utils.Position) bool {
+		return IsPositionInsideLoop(b, p)
+	})
+	positionsWithFound := utils.ZipWith(locations, positionsInsideLoop)
+	positionsWithFoundTrue := utils.Filter(positionsWithFound, func(value utils.Pair[utils.Position, bool]) bool {
+		return value.Second
+	})
+
+	return utils.MapFunc1(positionsWithFoundTrue, func(v utils.Pair[utils.Position, bool]) utils.Position {
+		return v.First
+	})
+}
+
+func cleanBoard(cleanMap *utils.Board[string], dirtyMap *utils.Board[string]) {
+	// Clean all the remaining dangling pippes
+	for y := 0; y < cleanMap.Height; y++ {
+		for x := 0; x < cleanMap.Width; x++ {
+			if cleanMap.Get(x, y) != "*" {
+				if cleanMap.Get(x, y) != "." {
+					// All the "." remain there, all the dangling pipes are
+					// changed to $$
+					cleanMap.Set(x, y, "$")
+				}
+			}
+		}
+	}
+
+	// Combine both the cleanMap and the dirty map, so we can get a map with the main loop only
+	for y := 0; y < cleanMap.Height; y++ {
+		for x := 0; x < cleanMap.Width; x++ {
+			if cleanMap.Get(x, y) == "*" {
+				targetChar := dirtyMap.Get(x, y)
+				cleanMap.Set(x, y, targetChar)
+			}
+		}
+	}
+}
+
+func getBoard(filename string) utils.Board[string] {
+	rawLines := utils.ParseFile(filename)
+	return ParseRawLinesToBoard(rawLines)
 }
 
 func ParseRawLinesToBoard(rawLines []string) utils.Board[string] {
@@ -47,11 +129,12 @@ func ParseRawLinesToBoard(rawLines []string) utils.Board[string] {
 	height := len(rawLines)
 
 	board := utils.CreateBoard[string](width, height)
+	fmt.Printf("Creating board with: %d:%d \n", width, height)
 
 	// Fill in the board
 	for y := range rawLines {
 		for x, char := range strings.Split(rawLines[y], "") {
-			utils.Set(&board, x, y, char)
+			board.Set(x, y, char)
 		}
 	}
 
@@ -61,7 +144,7 @@ func ParseRawLinesToBoard(rawLines []string) utils.Board[string] {
 func FindStartingPosition(board *utils.Board[string]) utils.Position {
 	var x, y int
 	for y = 0; y < board.Height; y++ {
-		row := utils.GetRow(board, y)
+		row := board.GetRow(y)
 		for x = range row {
 			if row[x] == "S" {
 				return utils.Position{First: x, Second: y}
@@ -73,10 +156,16 @@ func FindStartingPosition(board *utils.Board[string]) utils.Position {
 	return utils.Position{}
 }
 
-func FindLargestLoop(board *utils.Board[string]) TrackingInfo {
+func FindLargestLoop(board *utils.Board[string], filename string) TrackingInfo {
 	// Walk till we come back to the starting position
 	startPos := FindStartingPosition(board)
-	trackingInfo := TrackingInfo{StartingPos: startPos, PreviousPos: startPos, CurrentPos: startPos}
+
+	trackingInfo := TrackingInfo{
+		StartingPos: startPos,
+		PreviousPos: startPos,
+		CurrentPos:  startPos,
+		board:       getBoard(filename),
+	}
 
 	// 1. Get the new position to move
 	// 2. Move to the new position
@@ -99,11 +188,11 @@ func FindLargestLoop(board *utils.Board[string]) TrackingInfo {
 func FindNextMove(board *utils.Board[string], info *TrackingInfo) utils.Position {
 	// Get previous position
 	// Get current position
-	currentChar := utils.Get(board, info.CurrentPos.First, info.CurrentPos.Second)
-	topChar := utils.GetTopChar(board, info.CurrentPos)
-	bottomChar := utils.GetBottomChar(board, info.CurrentPos)
-	leftChar := utils.GetLeftChar(board, info.CurrentPos)
-	rightChar := utils.GetRightChar(board, info.CurrentPos)
+	currentChar := board.Get(info.CurrentPos.First, info.CurrentPos.Second)
+	topChar := board.GetTopChar(info.CurrentPos)
+	bottomChar := board.GetBottomChar(info.CurrentPos)
+	leftChar := board.GetLeftChar(info.CurrentPos)
+	rightChar := board.GetRightChar(info.CurrentPos)
 
 	var nextMove utils.Position
 	if currentChar == "S" {
@@ -182,3 +271,116 @@ func FindNextMove(board *utils.Board[string], info *TrackingInfo) utils.Position
 
 	return nextMove
 }
+
+func FindAllTargetInBoard(board *utils.Board[string], target string) []utils.Position {
+	var foundPositions []utils.Position
+	for y := 0; y < board.Height; y++ {
+		for x := 0; x < board.Width; x++ {
+			if board.Get(x, y) == target {
+				foundPositions = append(foundPositions, utils.Position{First: x, Second: y})
+			}
+		}
+	}
+
+	return foundPositions
+}
+
+func IsPositionInsideLoop(b *utils.Board[string], p utils.Position) bool {
+	column := b.GetColumn(p.First)
+	row := b.GetRow(p.Second)
+
+	// Check bottom has walls
+	bottomSlice := column[p.Second+1:]
+	bottomHits := CountTargetInList(bottomSlice, []string{"S", "F", "7", "L", "J", "-"})
+	bottomIsOk := bottomHits%2 == 1
+
+	// check top has walls
+	topSlice := column[0:p.Second]
+	topHits := CountTargetInList(topSlice, []string{"S", "F", "7", "L", "J", "-"})
+	topIsOk := topHits%2 == 1
+
+	// check left has walls
+	leftSlice := row[0:p.First]
+	leftHits := CountTargetInList(leftSlice, []string{"S", "F", "7", "L", "J", "|"})
+	leftIsOk := leftHits%2 == 1
+
+	// check right has walls
+	rightSlice := row[p.First+1:]
+	rightHits := CountTargetInList(rightSlice, []string{"S", "F", "7", "L", "J", "|"})
+	rightIsOk := rightHits%2 == 1
+
+	//return bottomIsOk && topIsOk && leftIsOk && rightIsOk
+	isAlOk := (bottomHits > 0 && topHits > 0 && leftHits > 0 && rightHits > 0) &&
+		(bottomIsOk || topIsOk || leftIsOk || rightIsOk)
+
+	//if isAlOk {
+	//	fmt.Println("Bottom hits: ", bottomHits)
+	//	fmt.Println("top hits: ", topHits)
+	//	fmt.Println("left hits: ", leftHits)
+	//	fmt.Println("right hits: ", rightHits)
+	//
+	//}
+
+	return isAlOk
+}
+
+func CountTargetInList(list []string, targets []string) int {
+	var count int = 0
+	for i := range list {
+		for _, target := range targets {
+			if list[i] == target {
+				count += 1
+			}
+		}
+	}
+
+	return count
+}
+
+func FloodFill(b *utils.Board[string], p utils.Position) {
+	nextPositionsToVisit := make([]utils.Position, 0)
+	nextPositionsToVisit = append(nextPositionsToVisit, p)
+
+	fmt.Println("Floodfilling: ", p)
+
+	for len(nextPositionsToVisit) != 0 {
+		// pop item
+		nextPosition := nextPositionsToVisit[0]
+		nextPositionsToVisit = nextPositionsToVisit[1:]
+
+		fmt.Println("filling next position: ", nextPosition)
+		if b.Get(nextPosition.First, nextPosition.Second) == "^" {
+			continue
+		}
+
+		// Color current position to "^"
+		b.Set(nextPosition.First, nextPosition.Second, "^")
+
+		// Add next items to color
+		topChar := b.GetTopChar(nextPosition)
+		if topChar == "." || topChar == "$" {
+			fmt.Println("a")
+			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First, Second: nextPosition.Second - 1})
+		}
+
+		bottomChar := b.GetBottomChar(nextPosition)
+		if bottomChar == "." || bottomChar == "$" {
+			fmt.Println("b")
+			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First, Second: nextPosition.Second + 1})
+		}
+
+		leftChar := b.GetLeftChar(nextPosition)
+		if leftChar == "." || leftChar == "$" {
+			fmt.Println("c")
+			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First - 1, Second: nextPosition.Second})
+		}
+
+		rightChar := b.GetRightChar(nextPosition)
+		if rightChar == "." || rightChar == "$" {
+			fmt.Println("d")
+			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First + 1, Second: nextPosition.Second})
+		}
+	}
+}
+
+//func find
