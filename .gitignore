@@ -1,3 +1,5 @@
 # Ignore Intellij generated files
 .idea/**
 .idea/**.xml
+/bin/
+/src/pkg/
