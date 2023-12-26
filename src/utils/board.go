@@ -96,3 +96,16 @@ func (board *Board[T]) GetRightChar(p Position) T {
 
 	return *new(T)
 }
+
+func FindAllTargetInBoard(board *Board[string], target string) []Position {
+	var foundPositions []Position
+	for y := 0; y < board.Height; y++ {
+		for x := 0; x < board.Width; x++ {
+			if board.Get(x, y) == target {
+				foundPositions = append(foundPositions, Position{First: x, Second: y})
+			}
+		}
+	}
+
+	return foundPositions
+}

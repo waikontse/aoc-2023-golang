@@ -49,9 +49,9 @@ func SolvePart2(filename string) int {
 	board := getBoard(filename)
 	trackingInfo := FindLargestLoop(&board, filename)
 	cleanBoard(&trackingInfo.board, &board)
-	utils.Print(&trackingInfo.board)
-	foundDotLocations := FindAllTargetInBoard(&trackingInfo.board, ".")
-	foundDollarLocations := FindAllTargetInBoard(&trackingInfo.board, "$")
+	//	utils.Print(&trackingInfo.board)
+	foundDotLocations := utils.FindAllTargetInBoard(&trackingInfo.board, ".")
+	foundDollarLocations := utils.FindAllTargetInBoard(&trackingInfo.board, "$")
 	//utils.Print(&board)
 	//fmt.Println("Found targets: ", len(foundDotLocations))
 
@@ -73,11 +73,16 @@ func SolvePart2(filename string) int {
 
 	// Flood fill the map per position
 	for i := range mergedPositionsWithinLoop {
-		FloodFill(&trackingInfo.board, mergedPositionsWithinLoop[i])
+		FloodFill(&trackingInfo.board, mergedPositionsWithinLoop[i], "^",
+			func(target string) bool {
+				return target == "." || target == "$"
+			})
 	}
+
+	unFloodFillUnclosed(&trackingInfo.board)
 	utils.Print(&trackingInfo.board)
 
-	return len(FindAllTargetInBoard(&trackingInfo.board, "^"))
+	return len(utils.FindAllTargetInBoard(&trackingInfo.board, "^"))
 }
 
 func GetPositionsWithinLoop(locations []utils.Position, b *utils.Board[string]) []utils.Position {
@@ -272,19 +277,6 @@ func FindNextMove(board *utils.Board[string], info *TrackingInfo) utils.Position
 	return nextMove
 }
 
-func FindAllTargetInBoard(board *utils.Board[string], target string) []utils.Position {
-	var foundPositions []utils.Position
-	for y := 0; y < board.Height; y++ {
-		for x := 0; x < board.Width; x++ {
-			if board.Get(x, y) == target {
-				foundPositions = append(foundPositions, utils.Position{First: x, Second: y})
-			}
-		}
-	}
-
-	return foundPositions
-}
-
 func IsPositionInsideLoop(b *utils.Board[string], p utils.Position) bool {
 	column := b.GetColumn(p.First)
 	row := b.GetRow(p.Second)
@@ -337,50 +329,104 @@ func CountTargetInList(list []string, targets []string) int {
 	return count
 }
 
-func FloodFill(b *utils.Board[string], p utils.Position) {
+func FloodFill(
+	b *utils.Board[string],
+	p utils.Position,
+	newChar string,
+	pred func(target string) bool,
+) {
 	nextPositionsToVisit := make([]utils.Position, 0)
 	nextPositionsToVisit = append(nextPositionsToVisit, p)
 
-	fmt.Println("Floodfilling: ", p)
+	//	fmt.Println("Floodfilling: ", p)
 
 	for len(nextPositionsToVisit) != 0 {
 		// pop item
 		nextPosition := nextPositionsToVisit[0]
 		nextPositionsToVisit = nextPositionsToVisit[1:]
 
-		fmt.Println("filling next position: ", nextPosition)
-		if b.Get(nextPosition.First, nextPosition.Second) == "^" {
+		//		fmt.Println("filling next position: ", nextPosition)
+		if b.Get(nextPosition.First, nextPosition.Second) == newChar {
 			continue
 		}
 
-		// Color current position to "^"
-		b.Set(nextPosition.First, nextPosition.Second, "^")
+		// Color current position to 'newChar'
+		b.Set(nextPosition.First, nextPosition.Second, newChar)
 
 		// Add next items to color
 		topChar := b.GetTopChar(nextPosition)
-		if topChar == "." || topChar == "$" {
-			fmt.Println("a")
+		// topChar == "." || topChar == "$" {
+		if pred(topChar) {
 			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First, Second: nextPosition.Second - 1})
 		}
 
 		bottomChar := b.GetBottomChar(nextPosition)
-		if bottomChar == "." || bottomChar == "$" {
-			fmt.Println("b")
+		if pred(bottomChar) {
 			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First, Second: nextPosition.Second + 1})
 		}
 
 		leftChar := b.GetLeftChar(nextPosition)
-		if leftChar == "." || leftChar == "$" {
-			fmt.Println("c")
+		if pred(leftChar) {
 			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First - 1, Second: nextPosition.Second})
 		}
 
 		rightChar := b.GetRightChar(nextPosition)
-		if rightChar == "." || rightChar == "$" {
-			fmt.Println("d")
+		if pred(rightChar) {
 			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First + 1, Second: nextPosition.Second})
 		}
 	}
 }
 
-//func find
+func unFloodFillUnclosed(b *utils.Board[string]) {
+	// Keep un flood filling
+	position, hasFound := findUnclosedSymbol(b, "^")
+	for hasFound {
+		fmt.Println("un-floodfilling: ", position)
+		// Flood fill the position with a symbol
+		FloodFill(b, position, "#",
+			func(target string) bool {
+				return target == "^"
+			})
+
+		// update the result
+		position, hasFound = findUnclosedSymbol(b, "^")
+	}
+}
+
+func findUnclosedSymbol(b *utils.Board[string], symbol string) (utils.Position, bool) {
+	for y := 0; y < b.Height; y++ {
+		for x := 0; x < b.Width; x++ {
+			if b.Get(x, y) == symbol {
+				potentialPosition := utils.Position{First: x, Second: y}
+				if IsUnclosed(b, potentialPosition) {
+					return potentialPosition, true
+				}
+			}
+		}
+	}
+
+	return utils.Position{}, false
+}
+
+func IsUnclosed(b *utils.Board[string], p utils.Position) bool {
+	column := b.GetColumn(p.First)
+	row := b.GetRow(p.Second)
+
+	// Check bottom has walls
+	bottomSlice := column[p.Second+1:]
+	bottomHits := CountTargetInList(bottomSlice, []string{"S", "F", "7", "L", "J", "-"})
+
+	// check top has walls
+	topSlice := column[0:p.Second]
+	topHits := CountTargetInList(topSlice, []string{"S", "F", "7", "L", "J", "-"})
+
+	// check left has walls
+	leftSlice := row[0:p.First]
+	leftHits := CountTargetInList(leftSlice, []string{"S", "F", "7", "L", "J", "|"})
+
+	// check right has walls
+	rightSlice := row[p.First+1:]
+	rightHits := CountTargetInList(rightSlice, []string{"S", "F", "7", "L", "J", "|"})
+
+	return bottomHits == 0 || topHits == 0 || leftHits == 0 || rightHits == 0
+}
