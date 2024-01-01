@@ -1,11 +1,31 @@
 package utils
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Board[T comparable] struct {
 	Board  [][]T
 	Width  int
 	Height int
+}
+
+func ParseRawLinesToBoard(rawLines []string) Board[string] {
+	width := len(rawLines[0])
+	height := len(rawLines)
+
+	board := CreateBoard[string](width, height)
+	fmt.Printf("Creating board with: %d:%d \n", width, height)
+
+	// Fill in the board
+	for y := range rawLines {
+		for x, char := range strings.Split(rawLines[y], "") {
+			board.Set(x, y, char)
+		}
+	}
+
+	return board
 }
 
 func CreateBoard[T comparable](width, height int) Board[T] {

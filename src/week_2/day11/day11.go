@@ -2,8 +2,6 @@ package day11
 
 import (
 	"aoc-2023-golang/src/utils"
-	"fmt"
-	"strings"
 )
 
 func SolvePart1(filename string) int {
@@ -43,24 +41,7 @@ func SolvePart2(filename string, expansion int) int {
 
 func getBoard(filename string) utils.Board[string] {
 	rawLines := utils.ParseFile(filename)
-	return ParseRawLinesToBoard(rawLines)
-}
-
-func ParseRawLinesToBoard(rawLines []string) utils.Board[string] {
-	width := len(rawLines[0])
-	height := len(rawLines)
-
-	board := utils.CreateBoard[string](width, height)
-	fmt.Printf("Creating board with: %d:%d \n", width, height)
-
-	// Fill in the board
-	for y := range rawLines {
-		for x, char := range strings.Split(rawLines[y], "") {
-			board.Set(x, y, char)
-		}
-	}
-
-	return board
+	return utils.ParseRawLinesToBoard(rawLines)
 }
 
 func GetEmptyColumns(b *utils.Board[string]) []int {

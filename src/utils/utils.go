@@ -36,9 +36,6 @@ func ParseFile(filenameWithPath string) []string {
 	return lines
 }
 
-func ParseFileForDay(day int) {
-}
-
 func SumInts(values []int) int {
 	return ReduceFunc(values, func(i, j int) int {
 		return i + j
@@ -243,4 +240,27 @@ func ZipWith[T any, R any](lValues []T, rValues []R) []Pair[T, R] {
 	}
 
 	return pairs
+}
+
+func CompareSlices[T comparable](left, right []T) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	for i, v := range left {
+		if v != right[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func DiffInSlices[T comparable](left, right []T) int {
+	diffs := 0
+	for i, v := range left {
+		if v != right[i] {
+			diffs += 1
+		}
+	}
+
+	return diffs
 }
