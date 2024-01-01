@@ -50,7 +50,7 @@ func IsConfigurationCorrect(configuration string, expected []int) bool {
 	// Convert # to numbers
 	config := GetConfigurationForString(configuration)
 
-	return utils.CompareIntSlices(expected, config)
+	return utils.CompareSlices(expected, config)
 }
 
 func GetConfigurationForString(configuration string) []int {

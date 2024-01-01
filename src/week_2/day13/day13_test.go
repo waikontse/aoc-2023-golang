@@ -27,7 +27,7 @@ func TestSolvePart2_example(t *testing.T) {
 }
 
 func TestSolvePart2(t *testing.T) {
-	expected := 400
+	expected := 33438
 	result := SolvePart2("../../../resources/day_13.txt")
 
 	assert.Equal(t, expected, result)
