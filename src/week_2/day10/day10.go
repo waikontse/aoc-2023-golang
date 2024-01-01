@@ -3,6 +3,7 @@ package day10
 import (
 	"aoc-2023-golang/src/utils"
 	"fmt"
+	"math"
 	"os"
 	"strings"
 )
@@ -23,29 +24,35 @@ type TrackingInfo struct {
 	CurrentPos  utils.Position
 	stepsTaken  int
 	board       utils.Board[string]
+	positions   []utils.Position
 }
 
 func (trackingInfo *TrackingInfo) MoveToNewPosition(newPosition utils.Position) {
 	trackingInfo.PreviousPos, trackingInfo.CurrentPos = trackingInfo.CurrentPos, newPosition
 	trackingInfo.stepsTaken += 1
 
+	trackingInfo.positions = append(trackingInfo.positions, newPosition)
+
 	// Update the board
 	trackingInfo.board.Set(newPosition.First, newPosition.Second, "*")
+
 }
 
 func SolvePart1(filename string) int {
 	board := getBoard(filename)
-	//startingPos := FindStartingPosition(&board)
-
-	//utils.Print(&board)
-	//fmt.Println(startingPos)
-
 	trackingInfo := FindLargestLoop(&board, filename)
 
 	return trackingInfo.stepsTaken / 2
 }
 
 func SolvePart2(filename string) int {
+	board := getBoard(filename)
+	trackingInfo := FindLargestLoop(&board, filename)
+
+	return trackingInfo.CalculatePointsInArea()
+}
+
+func SolvePart2Old(filename string) int {
 	board := getBoard(filename)
 	trackingInfo := FindLargestLoop(&board, filename)
 	cleanBoard(&trackingInfo.board, &board)
@@ -83,6 +90,29 @@ func SolvePart2(filename string) int {
 	utils.Print(&trackingInfo.board)
 
 	return len(utils.FindAllTargetInBoard(&trackingInfo.board, "^"))
+}
+
+// CalculateArea Shoelace algorithm
+func (t *TrackingInfo) CalculateArea() float64 {
+	sum := 0
+	for i := 0; i < len(t.positions)-1; i++ {
+		pos1 := t.positions[i]
+		pos2 := t.positions[i+1]
+
+		sum += (pos1.First * pos2.Second) - (pos2.First * pos1.Second)
+	}
+
+	return math.Abs(float64(sum) / 2)
+}
+
+// CalculatePointsInArea Pick's theorem
+func (t *TrackingInfo) CalculatePointsInArea() int {
+	totalArea := math.Floor(t.CalculateArea())
+
+	subtract := (len(t.positions) / 2) - 1
+	totalPointsInArea := int(totalArea) - subtract
+
+	return totalPointsInArea
 }
 
 func GetPositionsWithinLoop(locations []utils.Position, b *utils.Board[string]) []utils.Position {
@@ -170,7 +200,10 @@ func FindLargestLoop(board *utils.Board[string], filename string) TrackingInfo {
 		PreviousPos: startPos,
 		CurrentPos:  startPos,
 		board:       getBoard(filename),
+		positions:   make([]utils.Position, 1),
 	}
+	// Set the starting position
+	trackingInfo.positions[0] = startPos
 
 	// 1. Get the new position to move
 	// 2. Move to the new position
@@ -305,19 +338,11 @@ func IsPositionInsideLoop(b *utils.Board[string], p utils.Position) bool {
 	isAlOk := (bottomHits > 0 && topHits > 0 && leftHits > 0 && rightHits > 0) &&
 		(bottomIsOk || topIsOk || leftIsOk || rightIsOk)
 
-	//if isAlOk {
-	//	fmt.Println("Bottom hits: ", bottomHits)
-	//	fmt.Println("top hits: ", topHits)
-	//	fmt.Println("left hits: ", leftHits)
-	//	fmt.Println("right hits: ", rightHits)
-	//
-	//}
-
 	return isAlOk
 }
 
 func CountTargetInList(list []string, targets []string) int {
-	var count int = 0
+	var count = 0
 	for i := range list {
 		for _, target := range targets {
 			if list[i] == target {
@@ -338,14 +363,11 @@ func FloodFill(
 	nextPositionsToVisit := make([]utils.Position, 0)
 	nextPositionsToVisit = append(nextPositionsToVisit, p)
 
-	//	fmt.Println("Floodfilling: ", p)
-
 	for len(nextPositionsToVisit) != 0 {
 		// pop item
 		nextPosition := nextPositionsToVisit[0]
 		nextPositionsToVisit = nextPositionsToVisit[1:]
 
-		//		fmt.Println("filling next position: ", nextPosition)
 		if b.Get(nextPosition.First, nextPosition.Second) == newChar {
 			continue
 		}
@@ -355,7 +377,6 @@ func FloodFill(
 
 		// Add next items to color
 		topChar := b.GetTopChar(nextPosition)
-		// topChar == "." || topChar == "$" {
 		if pred(topChar) {
 			nextPositionsToVisit = append(nextPositionsToVisit, utils.Position{First: nextPosition.First, Second: nextPosition.Second - 1})
 		}
