@@ -46,6 +46,7 @@ func Print[T comparable](board *Board[T]) {
 		}
 		fmt.Println()
 	}
+	fmt.Println()
 }
 
 func (board *Board[T]) Get(x, y int) T {
@@ -63,6 +64,12 @@ func (board *Board[T]) GetRow(height int) []T {
 	}
 
 	return row
+}
+
+func (board *Board[T]) SetRow(row []T, rowHeight int) {
+	for i := range row {
+		board.Set(i, rowHeight, row[i])
+	}
 }
 
 func (board *Board[T]) GetColumn(width int) []T {
