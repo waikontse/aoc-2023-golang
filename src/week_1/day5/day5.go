@@ -22,21 +22,35 @@ func SolvePart1(filename string) int64 {
 }
 
 func SolvePart2(filename string) int64 {
-	//rawLines := utils.ParseFile(filename)
+	rawLines := utils.ParseFile(filename)
 
-	//seeds := parseSeeds(rawLines[0])
-	//parsedMappers := parseMappers(rawLines)
+	seeds := parseSeeds(rawLines[0])
+	parsedMappers := parseMappers(rawLines)
+	seedPairs := []utils.Pair[int64, int64]{}
+	for i := 0; i < len(seeds); i += 2 {
+		var newPair = utils.Pair[int64, int64]{
+			First:  seeds[i],
+			Second: seeds[i+1],
+		}
 
-	// Expand the seed numbers
-	gcd := utils.FindGCD([]int64{562444630, 919339981})
-	fmt.Println("gcd: ", gcd)
+		seedPairs = append(seedPairs, newPair)
+	}
 
-	//var mappedLocations = utils.MapFunc1(seeds, func(seed int64) int64 {
-	//	return SolveSeedToLocation(seed, parsedMappers)
-	//})
+	for _, seedPair := range seedPairs {
+		fmt.Printf("First: %d Second: %d\n", seedPair.First, seedPair.Second)
+	}
 
-	//return slices.Min(mappedLocations)
-	return 0
+	var minLocation = int64(9223372036854775807)
+	for _, seedPair := range seedPairs {
+		for i := seedPair.First; i <= seedPair.First+seedPair.Second; i++ {
+			var tempMin = SolveSeedToLocation(i, parsedMappers)
+			if tempMin < minLocation {
+				minLocation = tempMin
+			}
+		}
+	}
+
+	return minLocation
 }
 
 func SolveSeedToLocation(seed int64, mappers []Mapper) int64 {
@@ -71,8 +85,6 @@ func (mapper Mapper) IsSourceMapped(source int64) bool {
 		}
 	}
 
-	//fmt.Println("Is source mapped: ", isMapped)
-
 	return isMapped
 }
 
@@ -81,7 +93,6 @@ func (mapper Mapper) GetDestinationFromSource(source int64) int64 {
 		return source
 	}
 
-	//fmt.Println("Checking for source: ", source)
 	var destination int64
 	for _, entry := range mapper.entries {
 		if source >= entry.sourceStart && source <= entry.sourceStop {
@@ -135,7 +146,6 @@ func ParseEntries(rawEntries []string) []Entry {
 }
 
 func ParseEntry(rawEntryLine string) Entry {
-	//fmt.Println("splitting entry: ", rawEntryLine)
 	splitted := strings.Split(strings.TrimSpace(rawEntryLine), " ")
 	splitInts := utils.MapFunc1(splitted, func(val string) int64 {
 		i, _ := strconv.ParseInt(val, 10, 64)
