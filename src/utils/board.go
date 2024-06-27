@@ -11,6 +11,12 @@ type Board[T comparable] struct {
 	Height int
 }
 
+func ParseInputIntoBoard(filename string) Board[string] {
+	rawLines := ParseFile(filename)
+
+	return ParseRawLinesToBoard(rawLines)
+}
+
 func ParseRawLinesToBoard(rawLines []string) Board[string] {
 	width := len(rawLines[0])
 	height := len(rawLines)
@@ -135,4 +141,12 @@ func FindAllTargetInBoard(board *Board[string], target string) []Position {
 	}
 
 	return foundPositions
+}
+
+func FillBoardWithValue(board *Board[string], value string) {
+	for y := 0; y < board.Height; y++ {
+		for x := 0; x < board.Width; x++ {
+			board.Set(x, y, value)
+		}
+	}
 }

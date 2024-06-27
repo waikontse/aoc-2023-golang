@@ -6,7 +6,7 @@ import (
 )
 
 func SolvePart1(filename string) int {
-	board := ParseInputIntoBoard(filename)
+	board := utils.ParseInputIntoBoard(filename)
 
 	MoveNorth(&board)
 
@@ -14,7 +14,7 @@ func SolvePart1(filename string) int {
 }
 
 func SolvePart2(filename string) int {
-	board := ParseInputIntoBoard(filename)
+	board := utils.ParseInputIntoBoard(filename)
 
 	sampleSize := 200
 	samples := make([]int, sampleSize)
@@ -27,12 +27,6 @@ func SolvePart2(filename string) int {
 	bucket := (1000000000 - start) % (periodicity)
 
 	return bucketSamples[bucket]
-}
-
-func ParseInputIntoBoard(filename string) utils.Board[string] {
-	rawLines := utils.ParseFile(filename)
-
-	return utils.ParseRawLinesToBoard(rawLines)
 }
 
 func MoveWholeCycle(b *utils.Board[string]) {

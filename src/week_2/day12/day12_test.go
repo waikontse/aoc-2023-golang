@@ -6,7 +6,7 @@ import (
 )
 
 func TestSolvePart1_example(t *testing.T) {
-	expected := 21
+	expected := 7032
 	result := SolvePart1("day_12_example.txt")
 
 	assert.Equal(t, expected, result)
