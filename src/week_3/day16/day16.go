@@ -44,7 +44,7 @@ func moveAndMark(info *TrackingInfo) {
 	// For every position in the list, check if we can move 1 position
 }
 
-func move(info *TrackingInfo, currentPosition Position) {
+func move(info *TrackingInfo, currentPosition Position) (int, Position) {
 	switch currentPosition.Third {
 	case UP:
 		break
@@ -57,18 +57,18 @@ func move(info *TrackingInfo, currentPosition Position) {
 	}
 }
 
-func moveUp() {
-
+func moveUp(info *TrackingInfo, currentPosition Position) (int, Position) {
+	return -1, Position{}
 }
 
-func moveDown() {
-
+func moveDown(info *TrackingInfo, currentPosition Position) (int, Position) {
+	return -1, Position{}
 }
 
-func moveLeft() {
-
+func moveLeft(info *TrackingInfo, currentPosition Position) (int, Position) {
+	return -1, Position{}
 }
 
-func moveRight() {
-
+func moveRight(info *TrackingInfo, currentPosition Position) (int, Position) {
+	return -1, Position{}
 }
