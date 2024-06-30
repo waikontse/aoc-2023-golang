@@ -82,12 +82,12 @@ func (board *Board[T]) GetColumn(width int) []T {
 	return board.Board[width]
 }
 
-func CanMoveTop(p Position) bool {
+func (board *Board[T]) CanMoveTop(p Position) bool {
 	return p.Second > 0
 }
 
 func (board *Board[T]) GetTopChar(p Position) T {
-	if CanMoveTop(p) {
+	if board.CanMoveTop(p) {
 		return board.Get(p.First, p.Second-1)
 	}
 
@@ -106,12 +106,12 @@ func (board *Board[T]) GetBottomChar(p Position) T {
 	return *new(T)
 }
 
-func CanMoveLeft(p Position) bool {
+func (board *Board[T]) CanMoveLeft(p Position) bool {
 	return p.First > 0
 }
 
 func (board *Board[T]) GetLeftChar(p Position) T {
-	if CanMoveLeft(p) {
+	if board.CanMoveLeft(p) {
 		return board.Get(p.First-1, p.Second)
 	}
 
