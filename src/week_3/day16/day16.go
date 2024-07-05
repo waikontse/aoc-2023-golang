@@ -142,15 +142,6 @@ func moveAndMark(info *TrackingInfo) {
 
 		move(info, currentPosition)
 	}
-
-	// 1. Mark the current location
-	// 2. Make a move from the current location
-
-	// 3. Check the return value of the move method
-	// Do nothing
-	// Add 1 location
-	// Add 2 locations
-
 }
 
 func move(info *TrackingInfo, currentPosition PositionWithDirection) {
