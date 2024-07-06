@@ -63,6 +63,12 @@ func (board *Board[T]) Set(x, y int, value T) {
 	board.Board[x][y] = value
 }
 
+func (board *Board[T]) SetRowRange(xFrom, xTo, y int, value T) {
+	for x := xFrom; x <= xTo; x++ {
+		board.Set(x, y, value)
+	}
+}
+
 func (board *Board[T]) GetRow(height int) []T {
 	row := make([]T, board.Width)
 	for i := range board.Board {
@@ -75,6 +81,12 @@ func (board *Board[T]) GetRow(height int) []T {
 func (board *Board[T]) SetRow(row []T, rowHeight int) {
 	for i := range row {
 		board.Set(i, rowHeight, row[i])
+	}
+}
+
+func (board *Board[T]) SetColumnRange(yFrom, yTo, x int, value T) {
+	for y := yFrom; y <= yTo; y++ {
+		board.Set(x, y, value)
 	}
 }
 

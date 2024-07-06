@@ -1,9 +1,9 @@
 package day10
 
 import (
+	"aoc-2023-golang/src/algorithms"
 	"aoc-2023-golang/src/utils"
 	"fmt"
-	"math"
 	"os"
 	"strings"
 )
@@ -49,70 +49,7 @@ func SolvePart2(filename string) int {
 	board := getBoard(filename)
 	trackingInfo := FindLargestLoop(&board, filename)
 
-	return trackingInfo.CalculatePointsInArea()
-}
-
-func SolvePart2Old(filename string) int {
-	board := getBoard(filename)
-	trackingInfo := FindLargestLoop(&board, filename)
-	cleanBoard(&trackingInfo.board, &board)
-	//	utils.Print(&trackingInfo.board)
-	foundDotLocations := utils.FindAllTargetInBoard(&trackingInfo.board, ".")
-	foundDollarLocations := utils.FindAllTargetInBoard(&trackingInfo.board, "$")
-	//utils.Print(&board)
-	//fmt.Println("Found targets: ", len(foundDotLocations))
-
-	// Find all the '.' in the board
-	// Determine if '.' is inside the main loop
-	dotPositionsWithinLoop := GetPositionsWithinLoop(foundDotLocations,
-		&trackingInfo.board)
-	dollarLocationsInsideLoop := GetPositionsWithinLoop(foundDollarLocations,
-		&trackingInfo.board)
-
-	fmt.Println("Found ground inside loop: ", len(dotPositionsWithinLoop))
-	fmt.Println("Found loose pipes inside loop: ", len(dollarLocationsInsideLoop))
-
-	//for _, p := range dollarLocationsInsideLoop {
-	//	trackingInfo.board.Set(p.First, p.Second, ".")
-	//}
-
-	mergedPositionsWithinLoop := append(dotPositionsWithinLoop, dollarLocationsInsideLoop...)
-
-	// Flood fill the map per position
-	for i := range mergedPositionsWithinLoop {
-		FloodFill(&trackingInfo.board, mergedPositionsWithinLoop[i], "^",
-			func(target string) bool {
-				return target == "." || target == "$"
-			})
-	}
-
-	unFloodFillUnclosed(&trackingInfo.board)
-	utils.Print(&trackingInfo.board)
-
-	return len(utils.FindAllTargetInBoard(&trackingInfo.board, "^"))
-}
-
-// CalculateArea Shoelace algorithm
-func (t *TrackingInfo) CalculateArea() float64 {
-	sum := 0
-	for i := 0; i < len(t.positions)-1; i++ {
-		pos1 := t.positions[i]
-		pos2 := t.positions[i+1]
-
-		sum += (pos1.First * pos2.Second) - (pos2.First * pos1.Second)
-	}
-
-	return math.Abs(float64(sum) / 2)
-}
-
-// CalculatePointsInArea Pick's theorem
-func (t *TrackingInfo) CalculatePointsInArea() int {
-	totalArea := math.Floor(t.CalculateArea())
-
-	subtract := (len(t.positions) / 2) - 1
-	totalPointsInArea := int(totalArea) - subtract
-
-	return totalPointsInArea
+	return algorithms.CalculatePointsInArea(trackingInfo.positions)
 }
 
 func GetPositionsWithinLoop(locations []utils.Position, b *utils.Board[string]) []utils.Position {
