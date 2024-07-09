@@ -49,7 +49,7 @@ func SolvePart2(filename string) int {
 	board := getBoard(filename)
 	trackingInfo := FindLargestLoop(&board, filename)
 
-	return algorithms.CalculatePointsInArea(trackingInfo.positions)
+	return int(algorithms.CalculatePointsInArea(trackingInfo.positions))
 }
 
 func GetPositionsWithinLoop(locations []utils.Position, b *utils.Board[string]) []utils.Position {

@@ -19,7 +19,7 @@ type Item struct {
 type Spec struct {
 	operand1 string
 	operand2 int
-	opertor  string
+	operator string
 	result   string
 }
 
@@ -51,13 +51,8 @@ func SolvePart1(filename string) int {
 	return sum
 }
 
-func SolvePart2(filename string) int {
+func SolvePart2(filename string) int64 {
 	engine := parseRawInputToItemsAndEngine(filename)
-
-	// build all the rules up with their transitions to check
-	// which rules end up in Accepted
-
-	// filter out the lists of rules that will always fail
 
 	frontier := make([]EvalSpec, 0)
 	frontier = append(frontier, engine.rules["in"])
@@ -78,14 +73,26 @@ func SolvePart2(filename string) int {
 		}
 	}
 
-	fmt.Println(engine.rules)
+	accumulator := generateAllAcceptingRules(engine)
+	sum := int64(0)
+	for _, spec := range accumulator {
+		fmt.Println("Found accepting EvalSped: ", spec)
+		sum += spec.calculateCombinations()
+	}
 
-	return 0
+	//gatheredRuled := gatherRules(accumulator)
+	//for s, specs := range gatheredRuled {
+	//	for _, spec := range specs {
+	//		spec.
+	//	}
+	//}
+	//fmt.Println(gatheredRuled)
+
+	return sum
 }
 
 func parseRawInputToItemsAndEngine(filename string) Engine {
 	rawLines := utils.ParseFile(filename)
-
 	splitPosition := slices.IndexFunc(rawLines, func(line string) bool {
 		return line == ""
 	})
@@ -162,8 +169,8 @@ func parseSpec(line string) Spec {
 	// return if only the jump operation
 	if operator == "jmp" {
 		return Spec{
-			opertor: operator,
-			result:  line,
+			operator: operator,
+			result:   line,
 		}
 	}
 
@@ -173,7 +180,7 @@ func parseSpec(line string) Spec {
 	return Spec{
 		operand1: splitted[0],
 		operand2: operand2,
-		opertor:  operator,
+		operator: operator,
 		result:   operandAndResult[1],
 	}
 }
@@ -209,7 +216,7 @@ func ifRule(engine *Engine, item Item, spec EvalSpec) {
 	// >
 	// jmp
 	for _, spec := range spec.Specs {
-		if spec.opertor == "<" {
+		if spec.operator == "<" {
 			if item.getOperand(spec.operand1) < spec.operand2 {
 				if spec.result == "A" {
 					fmt.Println("Accepting item")
@@ -229,7 +236,7 @@ func ifRule(engine *Engine, item Item, spec EvalSpec) {
 				// Continue with the next rule
 				continue
 			}
-		} else if spec.opertor == ">" {
+		} else if spec.operator == ">" {
 			if item.getOperand(spec.operand1) > spec.operand2 {
 				if spec.result == "A" {
 					fmt.Println("Accepting item")
@@ -249,7 +256,7 @@ func ifRule(engine *Engine, item Item, spec EvalSpec) {
 				// Continue with the next rule
 				continue
 			}
-		} else if spec.opertor == "jmp" {
+		} else if spec.operator == "jmp" {
 			// Jump to the rule if not equals A or R
 			if spec.result == "A" {
 				fmt.Println("Accepting item")
@@ -266,7 +273,7 @@ func ifRule(engine *Engine, item Item, spec EvalSpec) {
 			}
 
 		} else {
-			fmt.Println("unknown opertor:", spec.opertor)
+			fmt.Println("unknown operator:", spec.operator)
 			os.Exit(-1)
 		}
 	}
@@ -301,4 +308,88 @@ func (evalSpec *EvalSpec) isDeadend() bool {
 	}
 
 	return isDeadEnd
+}
+
+func (evalSpec *EvalSpec) calculateCombinations() int64 {
+	fmt.Println("Evaluating spec: ", evalSpec)
+	sum := int64(1)
+	remaining := 4
+
+	for _, spec := range evalSpec.Specs {
+		if spec.operator == "jmp" {
+			// ignore and continue
+			sum *= 4000
+		} else if spec.operator == "<" {
+			sum = sum * int64(spec.operand2-1)
+			remaining -= 1
+		} else if spec.operator == ">" {
+			sum = sum * int64(4000-spec.operand2)
+			remaining -= 1
+		}
+	}
+	//
+	//fmt.Println("Remainders: ", remaining)
+	//for i := 0; i < remaining; i++ {
+	//	sum = sum * 4000
+	//}
+
+	fmt.Println("Returning sum: ", sum)
+	return sum
+}
+
+func generateAllAcceptingRules(engine Engine) []EvalSpec {
+	accumulator := make([]EvalSpec, 0)
+	startingRule := engine.rules["in"]
+	emptySpec := make([]Spec, 0)
+
+	generateAcceptingRules(engine, &accumulator, emptySpec, startingRule)
+
+	return accumulator
+}
+
+func gatherRules(evalSpecs []EvalSpec) map[string][]Spec {
+
+	combiRules := make(map[string][]Spec, 0)
+	combiRules["x"] = make([]Spec, 0)
+	combiRules["m"] = make([]Spec, 0)
+	combiRules["a"] = make([]Spec, 0)
+	combiRules["s"] = make([]Spec, 0)
+
+	for _, evalSpec := range evalSpecs {
+		for _, spec := range evalSpec.Specs {
+			if spec.operator != "jmp" {
+				combiRules[spec.operand1] = append(combiRules[spec.operand1], spec)
+			}
+		}
+	}
+
+	return combiRules
+}
+
+func generateAcceptingRules(
+	engine Engine,
+	accumulator *[]EvalSpec,
+	currentSpecs []Spec,
+	currentRule EvalSpec) {
+
+	// Just return if a rule
+	for _, rule := range currentRule.Specs {
+		if rule.result == "A" {
+			// Add to accumulator
+			updatedSpecs := slices.Clone(currentSpecs)
+			updatedSpecs = append(updatedSpecs, rule)
+			*accumulator = append(*accumulator, EvalSpec{
+				Specs: slices.Clone(updatedSpecs),
+			})
+		} else if rule.result == "R" {
+			// ignore it
+			continue
+		} else {
+			// update the current spec and continue
+			updatedSpecs := slices.Clone(currentSpecs)
+			updatedSpecs = append(updatedSpecs, rule)
+			newRule := engine.rules[rule.result]
+			generateAcceptingRules(engine, accumulator, updatedSpecs, newRule)
+		}
+	}
 }
