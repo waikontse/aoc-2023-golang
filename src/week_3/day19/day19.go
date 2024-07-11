@@ -311,7 +311,7 @@ func (evalSpec *EvalSpec) isDeadend() bool {
 }
 
 func (evalSpec *EvalSpec) calculateCombinations() int64 {
-	fmt.Println("Evaluating spec: ", evalSpec)
+	//fmt.Println("Evaluating spec: ", evalSpec.)
 	sum := int64(1)
 	remaining := 4
 
@@ -327,11 +327,6 @@ func (evalSpec *EvalSpec) calculateCombinations() int64 {
 			remaining -= 1
 		}
 	}
-	//
-	//fmt.Println("Remainders: ", remaining)
-	//for i := 0; i < remaining; i++ {
-	//	sum = sum * 4000
-	//}
 
 	fmt.Println("Returning sum: ", sum)
 	return sum
@@ -373,23 +368,65 @@ func generateAcceptingRules(
 	currentRule EvalSpec) {
 
 	// Just return if a rule
-	for _, rule := range currentRule.Specs {
+	for i, rule := range currentRule.Specs {
 		if rule.result == "A" {
-			// Add to accumulator
-			updatedSpecs := slices.Clone(currentSpecs)
-			updatedSpecs = append(updatedSpecs, rule)
-			*accumulator = append(*accumulator, EvalSpec{
-				Specs: slices.Clone(updatedSpecs),
-			})
+			if rule.operator != "jmp" {
+				// Add to accumulator
+				updatedSpecs := slices.Clone(currentSpecs)
+				updatedSpecs = append(updatedSpecs, rule)
+				*accumulator = append(*accumulator, EvalSpec{
+					Specs: slices.Clone(updatedSpecs),
+				})
+			} else {
+				// it's a JMP operator
+				// Add to accumulator
+				updatedSpecs := slices.Clone(currentSpecs)
+				newRules := utils.MapFunc1(currentRule.Specs[0:i], func(spec Spec) Spec {
+					return spec.invertSpec()
+				})
+				updatedSpecs = append(updatedSpecs, newRules...)
+				*accumulator = append(*accumulator, EvalSpec{
+					Specs: slices.Clone(updatedSpecs),
+				})
+			}
 		} else if rule.result == "R" {
 			// ignore it
 			continue
 		} else {
-			// update the current spec and continue
-			updatedSpecs := slices.Clone(currentSpecs)
-			updatedSpecs = append(updatedSpecs, rule)
-			newRule := engine.rules[rule.result]
-			generateAcceptingRules(engine, accumulator, updatedSpecs, newRule)
+
+			if rule.operator != "jmp" {
+				// update the current spec and continue
+				updatedSpecs := slices.Clone(currentSpecs)
+				updatedSpecs = append(updatedSpecs, rule)
+				newRule := engine.rules[rule.result]
+				generateAcceptingRules(engine, accumulator, updatedSpecs, newRule)
+			} else {
+				// update the current spec and continue
+				updatedSpecs := slices.Clone(currentSpecs)
+				newSpecs := utils.MapFunc1(currentRule.Specs[0:i], func(spec Spec) Spec {
+					return spec.invertSpec()
+				})
+				updatedSpecs = append(updatedSpecs, newSpecs...)
+				newRule := engine.rules[rule.result]
+				generateAcceptingRules(engine, accumulator, updatedSpecs, newRule)
+			}
 		}
 	}
+}
+
+func (spec *Spec) invertSpec() Spec {
+	newSpec := Spec{
+		operand1: spec.operand1,
+		result:   spec.result,
+	}
+
+	if spec.operator == "<" {
+		newSpec.operator = ">"
+		newSpec.operand2 = spec.operand2 - 1
+	} else {
+		newSpec.operator = "<"
+		newSpec.operand2 = spec.operand2 + 1
+	}
+
+	return newSpec
 }
