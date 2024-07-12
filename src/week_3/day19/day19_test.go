@@ -52,7 +52,7 @@ func TestPart2_example_small(t *testing.T) {
 }
 
 func TestPart2(t *testing.T) {
-	expected := int64(112074045986829)
+	expected := int64(124693661917133)
 	result := SolvePart2("day19.txt")
 
 	assert.Equal(t, expected, result)

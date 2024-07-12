@@ -37,8 +37,6 @@ type Engine struct {
 func SolvePart1(filename string) int {
 	engine := parseRawInputToItemsAndEngine(filename)
 
-	//fmt.Println(engine)
-
 	for _, item := range engine.items {
 		evalItem(&engine, item)
 	}
@@ -51,7 +49,6 @@ func SolvePart1(filename string) int {
 	return sum
 }
 
-// We need to add the inverse rule, if it didn't go in.
 func SolvePart2(filename string) int64 {
 	engine := parseRawInputToItemsAndEngine(filename)
 
@@ -80,23 +77,6 @@ func SolvePart2(filename string) int64 {
 		fmt.Println("Found accepting EvalSped: ", spec)
 		sum += spec.calculateCombinations(4000)
 	}
-	//
-	//maxLimit := 10
-	//for i := 1; i <= maxLimit; i++ {
-	//	for x := 1; x <= maxLimit; x++ {
-	//		for y := 1; y <= maxLimit; y++ {
-	//			for z := 1; z <= maxLimit; z++ {
-	//				engine.items = append(engine.items, Item{x: i, m: x, a: y, s: z})
-	//			}
-	//		}
-	//	}
-	//}
-	//
-	//for _, item := range engine.items {
-	//	evalItem(&engine, item)
-	//}
-	//
-	//fmt.Println("Accepted: ", len(engine.accepted))
 
 	return sum
 }
@@ -218,13 +198,6 @@ func evalItem(engine *Engine, item Item) {
 }
 
 func ifRule(engine *Engine, item Item, spec EvalSpec) {
-	// Fetch the rule spec
-	// Evaluate the rule spec
-
-	// Operators:
-	// <
-	// >
-	// jmp
 	for _, spec := range spec.Specs {
 		if spec.operator == "<" {
 			if item.getOperand(spec.operand1) < spec.operand2 {
@@ -321,17 +294,13 @@ func (evalSpec *EvalSpec) isDeadend() bool {
 }
 
 func (evalSpec *EvalSpec) calculateCombinations(maxLimit int64) int64 {
-	//fmt.Println("Evaluating spec: ", evalSpec)
-
 	x := evalSpec.determineRangeForOperand("x", maxLimit)
 	m := evalSpec.determineRangeForOperand("m", maxLimit)
 	a := evalSpec.determineRangeForOperand("a", maxLimit)
 	s := evalSpec.determineRangeForOperand("s", maxLimit)
 
-	fmt.Printf("Limits x: %d, m: %d, a: %d, s: %d\n", x, m, a, s)
-
 	sum := x * m * a * s
-	fmt.Println("Returning sum: ", x*m*a*s)
+
 	return sum
 }
 
@@ -357,6 +326,10 @@ func generateAcceptingRules(
 			if rule.operator != "jmp" {
 				// Add to accumulator
 				updatedSpecs := slices.Clone(currentSpecs)
+				newRules := utils.MapFunc1(currentRule.Specs[0:i], func(spec Spec) Spec {
+					return spec.invertSpec()
+				})
+				updatedSpecs = append(updatedSpecs, newRules...)
 				updatedSpecs = append(updatedSpecs, rule)
 				*accumulator = append(*accumulator, EvalSpec{
 					Specs: slices.Clone(updatedSpecs),
@@ -381,6 +354,12 @@ func generateAcceptingRules(
 			if rule.operator != "jmp" {
 				// update the current spec and continue
 				updatedSpecs := slices.Clone(currentSpecs)
+
+				newRules := utils.MapFunc1(currentRule.Specs[0:i], func(spec Spec) Spec {
+					return spec.invertSpec()
+				})
+				updatedSpecs = append(updatedSpecs, newRules...)
+
 				updatedSpecs = append(updatedSpecs, rule)
 				newRule := engine.rules[rule.result]
 				generateAcceptingRules(engine, accumulator, updatedSpecs, newRule)
