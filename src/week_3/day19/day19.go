@@ -51,6 +51,7 @@ func SolvePart1(filename string) int {
 	return sum
 }
 
+// We need to add the inverse rule, if it didn't go in.
 func SolvePart2(filename string) int64 {
 	engine := parseRawInputToItemsAndEngine(filename)
 
@@ -77,16 +78,25 @@ func SolvePart2(filename string) int64 {
 	sum := int64(0)
 	for _, spec := range accumulator {
 		fmt.Println("Found accepting EvalSped: ", spec)
-		sum += spec.calculateCombinations()
+		sum += spec.calculateCombinations(4000)
 	}
-
-	//gatheredRuled := gatherRules(accumulator)
-	//for s, specs := range gatheredRuled {
-	//	for _, spec := range specs {
-	//		spec.
+	//
+	//maxLimit := 10
+	//for i := 1; i <= maxLimit; i++ {
+	//	for x := 1; x <= maxLimit; x++ {
+	//		for y := 1; y <= maxLimit; y++ {
+	//			for z := 1; z <= maxLimit; z++ {
+	//				engine.items = append(engine.items, Item{x: i, m: x, a: y, s: z})
+	//			}
+	//		}
 	//	}
 	//}
-	//fmt.Println(gatheredRuled)
+	//
+	//for _, item := range engine.items {
+	//	evalItem(&engine, item)
+	//}
+	//
+	//fmt.Println("Accepted: ", len(engine.accepted))
 
 	return sum
 }
@@ -310,25 +320,18 @@ func (evalSpec *EvalSpec) isDeadend() bool {
 	return isDeadEnd
 }
 
-func (evalSpec *EvalSpec) calculateCombinations() int64 {
-	//fmt.Println("Evaluating spec: ", evalSpec.)
-	sum := int64(1)
-	remaining := 4
+func (evalSpec *EvalSpec) calculateCombinations(maxLimit int64) int64 {
+	//fmt.Println("Evaluating spec: ", evalSpec)
 
-	for _, spec := range evalSpec.Specs {
-		if spec.operator == "jmp" {
-			// ignore and continue
-			sum *= 4000
-		} else if spec.operator == "<" {
-			sum = sum * int64(spec.operand2-1)
-			remaining -= 1
-		} else if spec.operator == ">" {
-			sum = sum * int64(4000-spec.operand2)
-			remaining -= 1
-		}
-	}
+	x := evalSpec.determineRangeForOperand("x", maxLimit)
+	m := evalSpec.determineRangeForOperand("m", maxLimit)
+	a := evalSpec.determineRangeForOperand("a", maxLimit)
+	s := evalSpec.determineRangeForOperand("s", maxLimit)
 
-	fmt.Println("Returning sum: ", sum)
+	fmt.Printf("Limits x: %d, m: %d, a: %d, s: %d\n", x, m, a, s)
+
+	sum := x * m * a * s
+	fmt.Println("Returning sum: ", x*m*a*s)
 	return sum
 }
 
@@ -340,25 +343,6 @@ func generateAllAcceptingRules(engine Engine) []EvalSpec {
 	generateAcceptingRules(engine, &accumulator, emptySpec, startingRule)
 
 	return accumulator
-}
-
-func gatherRules(evalSpecs []EvalSpec) map[string][]Spec {
-
-	combiRules := make(map[string][]Spec, 0)
-	combiRules["x"] = make([]Spec, 0)
-	combiRules["m"] = make([]Spec, 0)
-	combiRules["a"] = make([]Spec, 0)
-	combiRules["s"] = make([]Spec, 0)
-
-	for _, evalSpec := range evalSpecs {
-		for _, spec := range evalSpec.Specs {
-			if spec.operator != "jmp" {
-				combiRules[spec.operand1] = append(combiRules[spec.operand1], spec)
-			}
-		}
-	}
-
-	return combiRules
 }
 
 func generateAcceptingRules(
@@ -429,4 +413,51 @@ func (spec *Spec) invertSpec() Spec {
 	}
 
 	return newSpec
+}
+
+func (evalSpec *EvalSpec) determineRangeForOperand(operand string, maxLimit int64) int64 {
+	operands := utils.Filter(evalSpec.Specs, func(spec Spec) bool {
+		return spec.operand1 == operand
+	})
+
+	if len(operands) == 0 {
+		return maxLimit
+	}
+
+	// determine the lower bound for "<"
+	allLTs := utils.Filter(operands, func(spec Spec) bool {
+		return spec.operator == "<"
+	})
+
+	// we need to find the lowest values
+	minLts := 9999
+	for _, spec := range allLTs {
+		if spec.operand2 < minLts {
+			minLts = spec.operand2
+		}
+	}
+
+	// determine the upper bound for ">"
+	allGts := utils.Filter(operands, func(spec Spec) bool {
+		return spec.operator == ">"
+	})
+
+	// we need to find the highest value
+	maxGts := 0
+	for _, spec := range allGts {
+		if spec.operand2 > maxGts {
+			maxGts = spec.operand2
+		}
+	}
+
+	// Decide how many points to return
+	if len(allLTs) == 0 {
+		return maxLimit - int64(maxGts)
+	}
+
+	if len(allGts) == 0 {
+		return int64(minLts) - 1
+	}
+
+	return int64(utils.AbsInt(maxGts-minLts) - 1)
 }
