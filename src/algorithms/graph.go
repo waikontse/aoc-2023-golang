@@ -1,16 +1,20 @@
 package algorithms
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type Edge struct {
-	From int
-	To   int
+	From string
+	To   string
 	Cost int
 }
 
 type Graph struct {
-	Vertices []int
-	Edges    [][]Edge
+	// The number of vertices
+	Vertices []string
+	// The edges from x to <n>
+	Edges map[string][]Edge
 }
 
 func (graph *Graph) getVertexCount() int {
@@ -19,14 +23,22 @@ func (graph *Graph) getVertexCount() int {
 
 // Print functions
 func (graph *Graph) printEdges() {
-	for i := 0; i < len(graph.Edges); i++ {
-		for y := 0; y < len(graph.Edges[i]); y++ {
-			fmt.Print("Edge: ", graph.Edges[i][y])
+	for vertex, edges := range graph.Edges {
+		fmt.Print("Vertex: ", vertex)
+		for _, edge := range edges {
+			fmt.Print(edge)
 		}
+
 		fmt.Println("")
 	}
 }
 
-func (graph *Graph) addVertex(number int) {
-	graph.Vertices = append(graph.Vertices, number)
+func (graph *Graph) addVertex(name string) {
+	graph.Vertices = append(graph.Vertices, name)
+}
+
+func (graph *Graph) addEdge(vertex string, to string, cost int) {
+	edge := Edge{From: vertex, To: to, Cost: cost}
+
+	graph.Edges[vertex] = append(graph.Edges[vertex], edge)
 }

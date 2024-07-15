@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -28,6 +29,30 @@ func ParseRawLinesToBoard(rawLines []string) Board[string] {
 	for y := range rawLines {
 		for x, char := range strings.Split(rawLines[y], "") {
 			board.Set(x, y, char)
+		}
+	}
+
+	return board
+}
+
+func ParseInputIntoIntBoard(filename string) Board[int] {
+	rawLines := ParseFile(filename)
+
+	return ParseRawLinesToIntBoard(rawLines)
+}
+
+func ParseRawLinesToIntBoard(rawLines []string) Board[int] {
+	width := len(rawLines[0])
+	height := len(rawLines)
+
+	board := CreateBoard[int](width, height)
+	fmt.Printf("Creating board with: %d:%d \n", width, height)
+
+	// Fill in the board
+	for y := range rawLines {
+		for x, char := range strings.Split(rawLines[y], "") {
+			val, _ := strconv.Atoi(char)
+			board.Set(x, y, val)
 		}
 	}
 

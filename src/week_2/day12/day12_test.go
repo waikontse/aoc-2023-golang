@@ -6,15 +6,29 @@ import (
 )
 
 func TestSolvePart1_example(t *testing.T) {
-	expected := 7032
+	expected := 21
 	result := SolvePart1("day_12_example.txt")
 
 	assert.Equal(t, expected, result)
 }
 
 func TestSolvePart1(t *testing.T) {
-	expected := 21
+	expected := 7032
 	result := SolvePart1("day_12.txt")
+
+	assert.Equal(t, expected, result)
+}
+
+func TestSolvePart2_example(t *testing.T) {
+	expected := 525152
+	result := SolvePart2("day_12_example.txt")
+
+	assert.Equal(t, expected, result)
+}
+
+func TestSolvePart2(t *testing.T) {
+	expected := 7032
+	result := SolvePart2("day_12.txt")
 
 	assert.Equal(t, expected, result)
 }
