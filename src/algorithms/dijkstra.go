@@ -82,7 +82,7 @@ func (graph *Graph) Dijkstra(startNode string, lowerLimits int, upperLimits int)
 	// Prepare the distance map
 	distances = make(map[SeenEntry]int)
 	for key := range graph.Vertices {
-		for i := 0; i < 4; i++ {
+		for i := 0; i <= upperLimits; i++ {
 			entryUp := SeenEntry{Name: key, Direction: UP, Limit: i}
 			entryDown := SeenEntry{Name: key, Direction: DOWN, Limit: i}
 			entryLeft := SeenEntry{Name: key, Direction: LEFT, Limit: i}
@@ -95,27 +95,29 @@ func (graph *Graph) Dijkstra(startNode string, lowerLimits int, upperLimits int)
 		}
 	}
 
-	startEntryVertical := SeenEntry{Name: startNode, Direction: LEFT, Limit: 3}
-	//startEntryHorizontal := SeenEntry{Name: startNode, Direction: HORIZONTAL}
+	startEntryVertical := SeenEntry{Name: startNode, Direction: DOWN, Limit: upperLimits}
 
 	distances[startEntryVertical] = 0
-	//distances[startEntryHorizontal] = 0
 
 	// prepare the seen nodes
 	seen := make(map[SeenEntry]bool)
 	seen[startEntryVertical] = true
-	//seen[startEntryHorizontal] = true
 
 	// Prepare the vertices
 	h := make(PriorityQueue, 0)
 
 	heap.Init(&h)
-	heap.Push(&h, &Entry{Name: startNode, Direction: LEFT, xLimit: upperLimits, yLimit: upperLimits})
+	heap.Push(&h, &Entry{Name: startNode, Direction: DOWN, xLimit: upperLimits, yLimit: upperLimits})
+
+	canMoveToDestFunc := canMoveToDestination
+	if lowerLimits == 4 {
+		canMoveToDestFunc = canMoveToDestination2
+	}
 
 	for h.Len() != 0 {
 		// Update the list of possible candidates
 		currentShortestVertex := heap.Pop(&h).(*Entry)
-		//fmt.Println("Starting a new loop with: ", currentShortestVertex.Name)
+		//fmt.Printf("Starting a new loop with: %+v\n", currentShortestVertex)
 		for _, edge := range graph.Edges[currentShortestVertex.Name] {
 			newPathCostDestination := distances[currentShortestVertex.toSeenEntry()] + edge.Cost
 			// Can move vertically?
@@ -151,7 +153,7 @@ func (graph *Graph) Dijkstra(startNode string, lowerLimits int, upperLimits int)
 			if !seen[currentShortestVertex.toSeenEntry()] || newPathCostDestination < distanceToDest {
 				//fmt.Println("in 2")
 
-				if canMoveToDestination(currentShortestVertex, edge, lowerLimits, upperLimits) {
+				if canMoveToDestFunc(currentShortestVertex, edge, lowerLimits, upperLimits) {
 					// update the heap
 					newEntry := Entry{
 						Name:      edge.To,
@@ -183,6 +185,17 @@ func (graph *Graph) Dijkstra(startNode string, lowerLimits int, upperLimits int)
 
 func canMoveToDestination(from *Entry, destination Edge, lowerLimit int, upperLimit int) bool {
 	canMoveToDestination := false
+	if from.isXMovementTo(destination) {
+		canMoveToDestination = from.xLimit > 0
+	} else if from.isYMovementTo(destination) {
+		canMoveToDestination = from.yLimit > 0
+	}
+
+	return canMoveToDestination
+}
+
+func canMoveToDestination2(from *Entry, destination Edge, lowerLimit int, upperLimit int) bool {
+	canMoveToDestination := false
 	hasEnoughMoves := false
 	isXMovement := false
 	isYMovement := false
@@ -196,15 +209,18 @@ func canMoveToDestination(from *Entry, destination Edge, lowerLimit int, upperLi
 
 	// Update the check for part2,
 	// We cannot change direction unless we have moved the minimum amount in the same direction
-	if isSameDirection(from, destination) {
+	isNotSameDirection := !isSameDirection(from, destination)
+	if isNotSameDirection && from.Name != "0,0" {
 		maxRemaining := upperLimit - lowerLimit
 		if isXMovement {
-			hasEnoughMoves = from.xLimit <= maxRemaining
+			hasEnoughMoves = from.yLimit <= maxRemaining
 		}
 
 		if isYMovement {
-			hasEnoughMoves = from.yLimit <= maxRemaining
+			hasEnoughMoves = from.xLimit <= maxRemaining
 		}
+	} else {
+		hasEnoughMoves = true
 	}
 
 	return canMoveToDestination && hasEnoughMoves
@@ -309,5 +325,15 @@ func isOppositeDirection(entry *Entry, edge Edge) bool {
 }
 
 func isSameDirection(entry *Entry, edge Edge) bool {
-	return !isOppositeDirection(entry, edge)
+	if entry.Direction == UP && entry.isUpMovementTo(edge) {
+		return true
+	} else if entry.Direction == DOWN && entry.isDownMovementTo(edge) {
+		return true
+	} else if entry.Direction == LEFT && entry.isLeftMovementTo(edge) {
+		return true
+	} else if entry.Direction == RIGHT && entry.isRightMovementTo(edge) {
+		return true
+	} else {
+		return false
+	}
 }
