@@ -183,16 +183,31 @@ func (graph *Graph) Dijkstra(startNode string, lowerLimits int, upperLimits int)
 
 func canMoveToDestination(from *Entry, destination Edge, lowerLimit int, upperLimit int) bool {
 	canMoveToDestination := false
+	hasEnoughMoves := false
+	isXMovement := false
+	isYMovement := false
 	if from.isXMovementTo(destination) {
 		canMoveToDestination = from.xLimit > 0
+		isXMovement = true
 	} else if from.isYMovementTo(destination) {
 		canMoveToDestination = from.yLimit > 0
+		isYMovement = true
 	}
 
-	//fmt.Print("Moving from to: ", from, destination)
-	//fmt.Println("  Can move to destination: ", canMoveToDestination)
+	// Update the check for part2,
+	// We cannot change direction unless we have moved the minimum amount in the same direction
+	if isSameDirection(from, destination) {
+		maxRemaining := upperLimit - lowerLimit
+		if isXMovement {
+			hasEnoughMoves = from.xLimit <= maxRemaining
+		}
 
-	return canMoveToDestination
+		if isYMovement {
+			hasEnoughMoves = from.yLimit <= maxRemaining
+		}
+	}
+
+	return canMoveToDestination && hasEnoughMoves
 }
 
 func (edge *Entry) isXMovementTo(destination Edge) bool {
@@ -291,4 +306,8 @@ func isOppositeDirection(entry *Entry, edge Edge) bool {
 	} else {
 		return false
 	}
+}
+
+func isSameDirection(entry *Entry, edge Edge) bool {
+	return !isOppositeDirection(entry, edge)
 }
