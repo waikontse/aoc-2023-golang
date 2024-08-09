@@ -20,22 +20,22 @@ func TestPart1_sample(t *testing.T) {
 }
 
 func TestPart1(t *testing.T) {
-	expected := 102
-	result := SolvePart1("day17.txt", 9999)
+	expected := 847
+	result := SolvePart1("day17.txt", 3)
 
 	assert.Equal(t, expected, result)
 }
 
 func TestPart2_example(t *testing.T) {
-	expected := 102
-	result := SolvePart2("day17_example.txt")
+	expected := 94
+	result := SolvePart2("day17_example.txt", 6, 10)
 
 	assert.Equal(t, expected, result)
 }
 
 func TestPart2(t *testing.T) {
 	expected := 102
-	result := SolvePart2("day17.txt")
+	result := SolvePart2("day17.txt", 6, 10)
 
 	assert.Equal(t, expected, result)
 }

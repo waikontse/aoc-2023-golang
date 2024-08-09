@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
@@ -176,18 +177,18 @@ func MapValues(m map[string]int) []int {
 }
 
 func FindGCD(nums []int64) int64 {
-	min, max := nums[0], nums[0]
+	minValue, maxValue := nums[0], nums[0]
 
 	for _, num := range nums {
-		if num < min {
-			min = num
+		if num < minValue {
+			minValue = num
 		}
-		if num > max {
-			max = num
+		if num > maxValue {
+			maxValue = num
 		}
 	}
 
-	return Gcd(min, max)
+	return Gcd(minValue, maxValue)
 }
 
 func Gcd(a, b int64) int64 {
@@ -271,4 +272,15 @@ func Max(a int, b int) int {
 	}
 
 	return b
+}
+
+func MinValue(values []int) int {
+	lowestValue := math.MaxInt32
+	for _, value := range values {
+		if value < lowestValue {
+			lowestValue = value
+		}
+	}
+
+	return lowestValue
 }

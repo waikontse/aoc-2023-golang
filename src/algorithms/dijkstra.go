@@ -4,24 +4,26 @@ import (
 	"container/heap"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 )
 
 type Direction int
 
 const (
-	Up Direction = iota
+	UP Direction = iota
 	DOWN
 	LEFT
 	RIGHT
 )
 
 type Entry struct {
-	Name   string
-	From   string
-	Cost   int
-	xLimit int
-	yLimit int
+	Name      string
+	From      string
+	Direction Direction
+	Cost      int
+	xLimit    int
+	yLimit    int
 	// The index is needed by update and is maintained by the heap.Interface methods.
 	index int
 }
@@ -29,10 +31,11 @@ type Entry struct {
 type SeenEntry struct {
 	Name      string
 	Direction Direction
+	Limit     int
 }
 
 //###########################################
-// Priority queue implementation fron go docs
+// Priority queue implementation from go docs
 //###########################################
 // An Item is something we manage in a priority queue.
 
@@ -69,29 +72,7 @@ func (pq *PriorityQueue) Pop() any {
 	return item
 }
 
-//###########################################
-
-//type EntryHeap []Entry
-//
-//func (h EntryHeap) Len() int           { return len(h) }
-//func (h EntryHeap) Less(i, j int) bool { return h[i].Cost < h[j].Cost }
-//func (h EntryHeap) Swap(i, j int)      { h[i], h[j] = h[j], h[i] }
-
-//func (h *EntryHeap) Push(x any) {
-//	// Push and Pop use pointer receivers because they modify the slice's length,
-//	// not just its contents.
-//	*h = append(*h, Entry{Name: x.(Entry).Name, Cost: x.(Entry).Cost, xLimit: x.(Entry).xLimit, yLimit: x.(Entry).yLimit})
-//}
-
-//func (h *EntryHeap) Pop() any {
-//	old := *h
-//	//n := len(old)
-//	x := old[0]
-//	*h = old[1:]
-//	return x
-//}
-
-func (graph *Graph) Dijkstra(startNode string, limits int) (distances map[string]int, err error) {
+func (graph *Graph) Dijkstra(startNode string, lowerLimits int, upperLimits int) (distances map[SeenEntry]int, err error) {
 	startNode, ok := graph.Vertices[startNode]
 
 	if !ok {
@@ -99,73 +80,100 @@ func (graph *Graph) Dijkstra(startNode string, limits int) (distances map[string
 	}
 
 	// Prepare the distance map
-	distances = make(map[string]int)
+	distances = make(map[SeenEntry]int)
 	for key := range graph.Vertices {
-		distances[key+"v"] = math.MaxInt32
-		distances[key+"h"] = math.MaxInt32
+		for i := 0; i < 4; i++ {
+			entryUp := SeenEntry{Name: key, Direction: UP, Limit: i}
+			entryDown := SeenEntry{Name: key, Direction: DOWN, Limit: i}
+			entryLeft := SeenEntry{Name: key, Direction: LEFT, Limit: i}
+			entryRight := SeenEntry{Name: key, Direction: RIGHT, Limit: i}
+
+			distances[entryUp] = math.MaxInt32
+			distances[entryDown] = math.MaxInt32
+			distances[entryLeft] = math.MaxInt32
+			distances[entryRight] = math.MaxInt32
+		}
 	}
-	distances[startNode+"h"] = 0
-	distances[startNode+"v"] = 0
+
+	startEntryVertical := SeenEntry{Name: startNode, Direction: LEFT, Limit: 3}
+	//startEntryHorizontal := SeenEntry{Name: startNode, Direction: HORIZONTAL}
+
+	distances[startEntryVertical] = 0
+	//distances[startEntryHorizontal] = 0
 
 	// prepare the seen nodes
 	seen := make(map[SeenEntry]bool)
-	seen[startNode] = true
+	seen[startEntryVertical] = true
+	//seen[startEntryHorizontal] = true
 
 	// Prepare the vertices
 	h := make(PriorityQueue, 0)
 
 	heap.Init(&h)
-	heap.Push(&h, &Entry{Name: startNode + "h", xLimit: limits, yLimit: limits})
-	//for key := range graph.Vertices {
-	//	h.Push(Entry{Name: key, Cost: distances[key]})
-	//}
+	heap.Push(&h, &Entry{Name: startNode, Direction: LEFT, xLimit: upperLimits, yLimit: upperLimits})
 
 	for h.Len() != 0 {
-		// Find the lowest cost vertice first
-		//slices.SortStableFunc(vertices, func(from string, to string) int {
-		//	return distances[from] - distances[to]
-		//})
-
 		// Update the list of possible candidates
 		currentShortestVertex := heap.Pop(&h).(*Entry)
 		//fmt.Println("Starting a new loop with: ", currentShortestVertex.Name)
-		nameForEdges := currentShortestVertex.Name[0 : len(currentShortestVertex.Name)-1]
-		for _, edge := range graph.Edges[nameForEdges] {
-			newPathCostDestination := distances[currentShortestVertex.Name] + edge.Cost
+		for _, edge := range graph.Edges[currentShortestVertex.Name] {
+			newPathCostDestination := distances[currentShortestVertex.toSeenEntry()] + edge.Cost
 			// Can move vertically?
-			if newPathCostDestination < distances[edge.To+"v"] {
-				suffix := ""
-				if canMoveToDestination(currentShortestVertex, edge) {
-					// update the heap
-					if currentShortestVertex.isXMovementTo(edge) {
-						suffix = "h"
-						heap.Push(&h, &Entry{
-							Name:   edge.To + suffix,
-							From:   currentShortestVertex.Name,
-							Cost:   newPathCostDestination,
-							xLimit: currentShortestVertex.xLimit - 1,
-							yLimit: limits,
-						})
-					} else {
-						suffix = "v"
-						heap.Push(&h, &Entry{
-							Name:   edge.To + suffix,
-							From:   currentShortestVertex.Name,
-							Cost:   newPathCostDestination,
-							xLimit: limits,
-							yLimit: currentShortestVertex.yLimit - 1,
-						})
-					}
+			isVertical := currentShortestVertex.isYMovementTo(edge)
+			var destinationEntry SeenEntry
+			if isVertical {
+				//destinationEntry = edge.toVerticalEntry()
+				if currentShortestVertex.isUpMovementTo(edge) {
+					destinationEntry = edge.toUpEntry()
 				}
-
-				// Update the states to either v or h
-				distances[edge.To+suffix] = newPathCostDestination
-				seen[edge.To+suffix] = true
+				if currentShortestVertex.isDownMovementTo(edge) {
+					destinationEntry = edge.toDownEntry()
+				}
+				destinationEntry.Limit = currentShortestVertex.yLimit - 1
+			} else {
+				//destinationEntry = edge.toHorizontalEntry()
+				if currentShortestVertex.isLeftMovementTo(edge) {
+					destinationEntry = edge.toLeftEntry()
+				}
+				if currentShortestVertex.isRightMovementTo(edge) {
+					destinationEntry = edge.toRightEntry()
+				}
+				destinationEntry.Limit = currentShortestVertex.xLimit - 1
 			}
 
-			// Can move horizontally
-			if newPathCostDestination < distances[edge.To+"h"] {
-				// TODO fill me in
+			// Skip reversing directions
+			if isOppositeDirection(currentShortestVertex, edge) {
+				continue
+			}
+
+			//fmt.Printf("Trying for edge: %+v \n", edge)
+			var distanceToDest = distances[destinationEntry]
+			if !seen[currentShortestVertex.toSeenEntry()] || newPathCostDestination < distanceToDest {
+				//fmt.Println("in 2")
+
+				if canMoveToDestination(currentShortestVertex, edge, lowerLimits, upperLimits) {
+					// update the heap
+					newEntry := Entry{
+						Name:      edge.To,
+						From:      currentShortestVertex.Name,
+						Cost:      newPathCostDestination,
+						Direction: destinationEntry.Direction,
+					}
+
+					if isVertical {
+						newEntry.xLimit = upperLimits
+						newEntry.yLimit = currentShortestVertex.yLimit - 1
+					} else {
+						newEntry.xLimit = currentShortestVertex.xLimit - 1
+						newEntry.yLimit = upperLimits
+					}
+
+					// Update the states to either v or h
+					heap.Push(&h, &newEntry)
+					//fmt.Printf("Adding entry: %+v \n", newEntry)
+					distances[destinationEntry] = newPathCostDestination
+					seen[destinationEntry] = true
+				}
 			}
 		}
 	}
@@ -173,7 +181,7 @@ func (graph *Graph) Dijkstra(startNode string, limits int) (distances map[string
 	return distances, nil
 }
 
-func canMoveToDestination(from *Entry, destination Edge) bool {
+func canMoveToDestination(from *Entry, destination Edge, lowerLimit int, upperLimit int) bool {
 	canMoveToDestination := false
 	if from.isXMovementTo(destination) {
 		canMoveToDestination = from.xLimit > 0
@@ -181,14 +189,14 @@ func canMoveToDestination(from *Entry, destination Edge) bool {
 		canMoveToDestination = from.yLimit > 0
 	}
 
-	fmt.Print("Moving from to: ", from, destination)
-	fmt.Println("  Can move to destination: ", canMoveToDestination)
+	//fmt.Print("Moving from to: ", from, destination)
+	//fmt.Println("  Can move to destination: ", canMoveToDestination)
 
 	return canMoveToDestination
 }
 
-func (entry *Entry) isXMovementTo(destination Edge) bool {
-	entryPos := strings.Split(entry.Name, ",")
+func (edge *Entry) isXMovementTo(destination Edge) bool {
+	entryPos := strings.Split(edge.Name, ",")
 	destinationPos := strings.Split(destination.To, ",")
 
 	//fmt.Println("isXMovementTo: ", destinationPos[0], entryPos[0], entryPos[0] != destinationPos[0])
@@ -196,11 +204,91 @@ func (entry *Entry) isXMovementTo(destination Edge) bool {
 	return entryPos[0] != destinationPos[0]
 }
 
-func (entry *Entry) isYMovementTo(destination Edge) bool {
+func (edge *Entry) isYMovementTo(destination Edge) bool {
+	entryPos := strings.Split(edge.Name, ",")
+	destinationPos := strings.Split(destination.To, ",")
+
+	return entryPos[1] != destinationPos[1]
+}
+
+func (edge *Entry) isLeftMovementTo(destination Edge) bool {
+	entryPos := strings.Split(edge.Name, ",")
+	destinationPos := strings.Split(destination.To, ",")
+
+	leftX, _ := strconv.Atoi(entryPos[0])
+	rightX, _ := strconv.Atoi(destinationPos[0])
+
+	return (leftX - 1) == rightX
+}
+
+func (edge *Entry) isRightMovementTo(destination Edge) bool {
+	entryPos := strings.Split(edge.Name, ",")
+	destinationPos := strings.Split(destination.To, ",")
+
+	leftX, _ := strconv.Atoi(entryPos[0])
+	rightX, _ := strconv.Atoi(destinationPos[0])
+
+	return (leftX + 1) == rightX
+}
+
+func (entry *Entry) isUpMovementTo(destination Edge) bool {
 	entryPos := strings.Split(entry.Name, ",")
 	destinationPos := strings.Split(destination.To, ",")
 
-	//fmt.Println("isYMovementTo: ", destinationPos[1], entryPos[1], entryPos[1] != destinationPos[1])
+	leftY, _ := strconv.Atoi(entryPos[1])
+	rightY, _ := strconv.Atoi(destinationPos[1])
 
-	return entryPos[1] != destinationPos[1]
+	return (leftY - 1) == rightY
+}
+
+func (entry *Entry) isDownMovementTo(destination Edge) bool {
+	entryPos := strings.Split(entry.Name, ",")
+	destinationPos := strings.Split(destination.To, ",")
+
+	leftY, _ := strconv.Atoi(entryPos[1])
+	rightY, _ := strconv.Atoi(destinationPos[1])
+
+	return (leftY + 1) == rightY
+}
+
+func (node *Entry) toSeenEntry() SeenEntry {
+	entry := SeenEntry{Name: node.Name, Direction: node.Direction}
+
+	if node.Direction == LEFT || node.Direction == RIGHT {
+		entry.Limit = node.xLimit
+	} else {
+		entry.Limit = node.yLimit
+	}
+
+	return entry
+}
+
+func (edge *Edge) toLeftEntry() SeenEntry {
+	return SeenEntry{Name: edge.To, Direction: LEFT}
+}
+
+func (edge *Edge) toRightEntry() SeenEntry {
+	return SeenEntry{Name: edge.To, Direction: RIGHT}
+}
+
+func (edge *Edge) toUpEntry() SeenEntry {
+	return SeenEntry{Name: edge.To, Direction: UP}
+}
+
+func (edge *Edge) toDownEntry() SeenEntry {
+	return SeenEntry{Name: edge.To, Direction: DOWN}
+}
+
+func isOppositeDirection(entry *Entry, edge Edge) bool {
+	if entry.Direction == UP && entry.isDownMovementTo(edge) {
+		return true
+	} else if entry.Direction == DOWN && entry.isUpMovementTo(edge) {
+		return true
+	} else if entry.Direction == LEFT && entry.isRightMovementTo(edge) {
+		return true
+	} else if entry.Direction == RIGHT && entry.isLeftMovementTo(edge) {
+		return true
+	} else {
+		return false
+	}
 }

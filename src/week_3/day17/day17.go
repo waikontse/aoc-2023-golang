@@ -7,25 +7,36 @@ import (
 	"strconv"
 )
 
-func SolvePart1(filename string, limits int) int {
+func SolvePart1(filename string, upperLimit int) int {
 	board := utils.ParseInputIntoBoard(filename)
 
-	utils.Print(&board)
-
 	graph := parseFileToGraph(filename)
-	//graph.PrintEdges()
+	distances, _ := graph.Dijkstra("0,0", 0, upperLimit)
 
-	distances, _ := graph.Dijkstra("0,0", limits)
-
-	for vertex, cost := range distances {
-		fmt.Printf("Shortest path to %s: %d\n", vertex, cost)
-	}
-
-	return 0
+	return getShortestPathToPosition(fmt.Sprintf("%d,%d", board.Width-1, board.Height-1), distances)
 }
 
-func SolvePart2(filename string) int {
-	return 0
+func SolvePart2(filename string, lowerLimit int, upperLimit int) int {
+	board := utils.ParseInputIntoBoard(filename)
+
+	graph := parseFileToGraph(filename)
+	distances, _ := graph.Dijkstra("0,0", lowerLimit, upperLimit)
+
+	return getShortestPathToPosition(fmt.Sprintf("%d,%d", board.Width-1, board.Height-1), distances)
+}
+
+func getShortestPathToPosition(position string, distances map[algorithms.SeenEntry]int) int {
+	// 1. Filter all the entries in distances map with the same name
+	// 2. Get the lowest value of the distances
+
+	distancesForMatchingEntries := make([]int, 0)
+	for k, v := range distances {
+		if k.Name == position {
+			distancesForMatchingEntries = append(distancesForMatchingEntries, v)
+		}
+	}
+
+	return utils.MinValue(distancesForMatchingEntries)
 }
 
 func parseFileToGraph(filename string) algorithms.Graph {
